@@ -1,0 +1,861 @@
+---
+title: "Crop Yield in Africa"
+
+date: "2023"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+##  **Introduction**
+
+Agriculture is the most comprehensive word used to denote the many ways in which crops plants and domestic animals sustain the global population by providing food and other products. The English word agriculture is derived from Latin 'agricultura' (ager and colo) which means field or land tillage.   
+
+Agriculture is a backbone of most economies in the Eastern and Southern Africa Region. More than 70% of the household in the rural area depend on agriculture.  In a larger part of Africa, agriculture is a major employer at local and national scale except for countries in Arab North Africa and South Africa. Agriculture provides employment to more than 60% of the total population and has a contribution to GDP also (about 17%).
+
+Agriculture forms the basis for food security and hence it is important. Agriculture is the field that enables the farmers to grow ideal crops in accordance with the environmental balance. Farming depends on various factors like climate and economic factors like temperature, irrigation, cultivation, soil, rain fall, pesticide and fertilizers. Historical information regarding crop yield provides major input for companies engaged in this domain. 
+
+Agriculture in Africa is still evolving with some areas advancing in the utilization of mechanized farming while others are still utilizing manual labor. More significantly, mechanization has enormously increased farm efficiency and productivity. The Oxford  English  Dictionary (1971) defines agriculture very broadly  as  “The  science  and art of cultivating  the  soil,  including the allied pursuits of gathering in the  crops and rearing live stock.
+
+
+The agricultural yield is primarily depending on weather conditions. Climate has a very strong influence on farming, which is considered to be the human activity that is most dependent on climate variations. Various seasonal, economic and biological factors influence the crop production but unpredictable changes in these factors lead to a great loss to farmers. In this context, the farmers necessarily require a timely advice to predict the future crop productivity and an analysis is to be made in order to help the farmers to maximize the crop production in their crops. Improvements in crop yields have been essential to feed a growing population, while reducing the environmental impact of food production at the same time. Crop yields might seem far from being one of the world’s largest problems.
+
+
+## **Research Questions**
+### Research Objectives
+
+The **objectives** of this research are:
+
+- To explore the average crop yield of major crops in Africa 
+- To explore the population growth in Africa
+- To identity five high growing population in Africa
+- To compare the crop yield of the five African countries with their population growth.
+
+
+
+
+
+
+
+The exercise shall begin by loading in appropriate packages that would aid the analysis.
+
+```{r include=FALSE}
+#load necessaries libraries
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(tidyr)
+library(knitr)
+library(mice)
+library(skimr)
+library(data.table)
+library(cowplot)
+library(reshape2)
+library(viridis)
+library(hrbrthemes)
+library(RColorBrewer)
+```
+
+
+we would Read in the data sets into R
+```{r include = FALSE}
+#import data sets
+key_crops <- read_csv("key_crop_yields.csv")
+land_use <- read_csv("land_use.csv")
+tractors <- read_csv("tractors.csv")
+
+```
+
+
+```{r}
+#View the data sets
+View(key_crops)
+View(land_use)
+View(tractors)
+
+```
+
+ 
+We have loaded the data sets needed for this exercise, we shall now explore and explain the variables/ column names in the tables. 
+
+## Data Set variable description
+
+### Key_Crops table 
+
+|variable                         |class     |description |
+|:--------------------------------|:---------|:-----------|
+|Entity                           |character | Country or Region Name |
+|Code                             |character | Country Code (note is NA for regions/continents) |
+|Year                             |double    | Year |
+|Wheat (tonnes per hectare)       |double    | Wheat yield |
+|Rice (tonnes per hectare)        |double    | Rice Yield |
+|Maize (tonnes per hectare)       |double    | Maize yield |
+|Soybeans (tonnes per hectare)    |double    | Soybeans yield |
+|Potatoes (tonnes per hectare)    |double    | Potato yield |
+|Beans (tonnes per hectare)       |double    | Beans yield|
+|Peas (tonnes per hectare)        |double    | Peas yield |
+|Cassava (tonnes per hectare)     |double    | Cassava (yuca) yield|
+|Barley (tonnes per hectare)      |double    | Barley|
+|Cocoa beans (tonnes per hectare) |double    | Cocoa |
+|Bananas (tonnes per hectare)     |double    | Bananas |
+  
+  
+  
+# land_use table
+
+|variable                                                  |class     |description |
+|:---------------------------------------------------------|:---------|:-----------|
+|Entity                           |character | Country or Region Name |
+|Code                             |character | Country Code (note is NA for regions/continents) |
+|Year                             |double    | Year |
+|cereal yield index                                        |double    | Cereal yield index |
+|change to land area used for cereal production since 1961 |double    | Change to land area use for cereal production relative since 1961|
+|total population (gapminder)                              |double    | Total population from gapminder data |
+
+# tractor table
+
+|variable                                              |class     |description |
+|:---------------------------------------------------------|:---------|:-----------|
+|Entity                           |character | Country or Region Name |
+|Code                             |character | Country Code (note is NA for regions/continents) |
+|Year                             |double    | Year |
+|Tractors per 100 sq km arable land                    |double    | Number of tractors per 100 sq km of arable land |
+|Cereal yield (kilograms per hectare) (kg per hectare) |double    | Cereal yield in kg per hectare |
+|Total population (Gapminder)                          |double    | Total population from gapminder |  
+
+
+Because this analysis is focused on Major cereals (wheat,rice,maize,soybeans and barley), we would now drop some redundant columns
+
+```{r}
+#drop dummy columns
+crops <- key_crops %>% select(-1,-9,-10,-11,-12,-14,-15)
+View(crops)
+```
+
+
+It's important to examine if the data sets have the appropriate data types.
+
+```{r}
+#check for data types
+str(crops)
+```
+All columns have proper data types for the crops data. 
+
+
+check data type for land_use data set. 
+```{r}
+#check for data types
+str(land_use)
+```
+All columns except the year column for land_use data set has an inappropriate data type of 'character' instead of 'numeric'.
+
+```{r}
+#drop the serial number column
+land_use <- land_use %>% select(-1)
+
+#change the year column data type from character to numeric
+land_use$Year <- as.numeric(land_use$Year)
+
+#recheck the data structure for the whole data frame
+str(land_use)
+```
+
+
+Check the datatypes for tractors data set
+
+```{r}
+#check for data types
+str(tractors)
+```
+The year column is of an inappropriate data type.
+
+convert year data type of 'character' to 'numeric' 
+```{r}
+#drop the serial number column
+tractors <- tractors %>% select(-1)
+
+#change the year column data type from character to numeric
+tractors$Year <- as.numeric(tractors$Year)
+
+#recheck the data structure for the whole data frame
+str(tractors)
+```
+
+What needs to be done next is to examine the data for missing data.
+
+```{r}
+#check for missing data in the crops data set
+skim(crops)
+```
+
+```{r}
+#check for missing data in the land_use df
+skim(land_use)
+```
+
+```{r}
+#check for missin data in the tractor df
+skim(tractors)
+```
+
+There are quite a  lot of missing data for all 3 data frames. Dropping these rows with missing number would not be the best, as it is going to drastically reduce the size of the data. 
+
+To overcome this obstacle, we would use imputation. In the simplest words, imputation represents a process of replacing missing or NA values of your data set with values that can be processed, analyzed, or passed into a machine learning model.
+
+This imputation would be done using the MICE package. MICE stands for Multivariate Imputation via Chained Equations, and it’s one of the most common packages for R users. It assumes the missing values are missing at random (MAR). We shall be using the following MICE imputation methods:
+
+pmm: Predictive mean matching.
+cart: Classification and regression trees.
+laso.norm: Lasso linear regression.
+
+Starting with the crops data frame.
+
+```{r echo=FALSE}
+#list out column names for crops df
+colnames(crops)
+  
+```
+
+
+```{r}
+#rename the columns
+names(crops)[4] = "wheat"
+names(crops)[5] = "Rice"
+names(crops)[6] = "Maize"
+names(crops)[7] = "Soybeans"
+names(crops)[8] = "Barley"
+
+#view new column names
+colnames(crops) 
+
+```
+
+Start imputation process:
+
+```{r include=FALSE}
+#imputation for wheat 
+
+wheat_imputed <- data.frame(
+  original = crops$wheat,
+  imputed_pmm = complete(mice(crops, method = "pmm"))$wheat,
+  imputed_cart = complete(mice(crops, method = "cart"))$wheat,
+  imputed_lasso = complete(mice(crops, method = "lasso.norm"))$wheat)
+
+#wheat_imputed
+```
+
+Using histogram will allow us determine which of the methods produced the best imputed data. 
+
+```{r}
+h1 <- ggplot(wheat_imputed, aes(x = original)) +
+  geom_histogram(fill = "#ad1538", color = "#000000", position = "identity") +
+  ggtitle("Original distribution") +
+  theme_classic()
+
+h2 <- ggplot(wheat_imputed, aes(x = imputed_pmm)) +
+  geom_histogram(fill = "#15ad4f", color = "#000000", position = "identity") +
+  ggtitle("imputed_pmm distribution") +
+  theme_classic()
+
+h3 <- ggplot(wheat_imputed, aes(x = imputed_cart)) +
+  geom_histogram(fill = "#1543ad", color = "#000000", position = "identity") +
+  ggtitle("imputed_cart distribution") +
+  theme_classic()
+
+h4 <- ggplot(wheat_imputed, aes(x = imputed_lasso)) +
+  geom_histogram(fill = "#ad8415", color = "#000000", position = "identity") +
+  ggtitle("imputed_lasso distribution") +
+  theme_classic()
+
+plot_grid(h1, h2, h3, h4, nrow = 2, ncol = 2)
+```
+
+The pmm distribution is the one that looks closest to the original distribution, so this method would be used to impute data for the wheat column. 
+
+```{r}
+#save df into a new variable
+full_crop <- crops
+
+#update the wheat column with the imputed data
+full_crop$wheat <- wheat_imputed$imputed_pmm
+
+```
+
+
+```{r include=FALSE}
+#impute methods for rice
+
+rice_imputed <- data.frame(
+  original = crops$Rice,
+  imputed_pmm = complete(mice(crops, method = "pmm"))$Rice,
+  imputed_cart = complete(mice(crops, method = "cart"))$Rice,
+  imputed_lasso = complete(mice(crops, method = "lasso.norm"))$Rice)
+
+#rice_imputed
+```
+
+Using histogram will allow us determine which of the methods produced the best imputed data. 
+
+```{r}
+k1 <- ggplot(rice_imputed, aes(x = original)) +
+  geom_histogram(fill = "#ad1538", color = "#000000", position = "identity") +
+  ggtitle("Original distribution") +
+  theme_classic()
+
+k2 <- ggplot(rice_imputed, aes(x = imputed_pmm)) +
+  geom_histogram(fill = "#15ad4f", color = "#000000", position = "identity") +
+  ggtitle("imputed_pmm distribution") +
+  theme_classic()
+
+k3 <- ggplot(rice_imputed, aes(x = imputed_cart)) +
+  geom_histogram(fill = "#1543ad", color = "#000000", position = "identity") +
+  ggtitle("imputed_cart distribution") +
+  theme_classic()
+
+k4 <- ggplot(rice_imputed, aes(x = imputed_lasso)) +
+  geom_histogram(fill = "#ad8415", color = "#000000", position = "identity") +
+  ggtitle("imputed_lasso distribution") +
+  theme_classic()
+
+plot_grid(k1, k2, k3, k4, nrow = 2, ncol = 2)
+
+```
+This is a close call, pmm and cart methods are very much identical to the original distribution, therefore, we go with pmm.
+
+
+```{r}
+#update the rice column with the imputed data
+
+full_crop$Rice <- rice_imputed$imputed_pmm
+
+```
+
+
+```{r include=FALSE}
+#impute methods for maize
+
+maize_imputed <- data.frame(
+  original = crops$Maize,
+  imputed_pmm = complete(mice(crops, method = "pmm"))$Maize,
+  imputed_cart = complete(mice(crops, method = "cart"))$Maize,
+  imputed_lasso = complete(mice(crops, method = "lasso.norm"))$Maize)
+
+#maize_imputed
+```
+Using histogram will allow us determine which of the methods produced the best imputed data. 
+
+```{r}
+g1 <- ggplot(maize_imputed, aes(x = original)) +
+  geom_histogram(fill = "#ad1538", color = "#000000", position = "identity") +
+  ggtitle("Original distribution") +
+  theme_classic()
+
+g2 <- ggplot(maize_imputed, aes(x = imputed_pmm)) +
+  geom_histogram(fill = "#15ad4f", color = "#000000", position = "identity") +
+  ggtitle("imputed_pmm distribution") +
+  theme_classic()
+
+g3 <- ggplot(maize_imputed, aes(x = imputed_cart)) +
+  geom_histogram(fill = "#1543ad", color = "#000000", position = "identity") +
+  ggtitle("imputed_cart distribution") +
+  theme_classic()
+
+g4 <- ggplot(maize_imputed, aes(x = imputed_lasso)) +
+  geom_histogram(fill = "#ad8415", color = "#000000", position = "identity") +
+  ggtitle("imputed_lasso distribution") +
+  theme_classic()
+
+plot_grid(g1, g2, g3, g4, nrow = 2, ncol = 2)
+
+```
+pmm appears to be the closest to the original data distribution. 
+
+```{r}
+#update the maize column with the imputed data
+
+full_crop$Maize <- maize_imputed$imputed_pmm
+
+```
+
+
+```{r include=FALSE}
+#impute methods for Soybeans
+
+soybeans_imputed <- data.frame(
+  original = crops$Soybeans,
+  imputed_pmm = complete(mice(crops, method = "pmm"))$Soybeans,
+  imputed_cart = complete(mice(crops, method = "cart"))$Soybeans,
+  imputed_lasso = complete(mice(crops, method = "lasso.norm"))$Soybeans)
+
+#Soybeans_imputed
+```
+
+Using histogram will allow us determine which of the methods produced the best imputed data. 
+
+```{r}
+f1 <- ggplot(soybeans_imputed, aes(x = original)) +
+  geom_histogram(fill = "#ad1538", color = "#000000", position = "identity") +
+  ggtitle("Original distribution") +
+  theme_classic()
+
+f2 <- ggplot(soybeans_imputed, aes(x = imputed_pmm)) +
+  geom_histogram(fill = "#15ad4f", color = "#000000", position = "identity") +
+  ggtitle("imputed_pmm distribution") +
+  theme_classic()
+
+f3 <- ggplot(soybeans_imputed, aes(x = imputed_cart)) +
+  geom_histogram(fill = "#1543ad", color = "#000000", position = "identity") +
+  ggtitle("imputed_cart distribution") +
+  theme_classic()
+
+f4 <- ggplot(soybeans_imputed, aes(x = imputed_lasso)) +
+  geom_histogram(fill = "#ad8415", color = "#000000", position = "identity") +
+  ggtitle("imputed_lasso distribution") +
+  theme_classic()
+
+plot_grid(f1, f2, f3, f4, nrow = 2, ncol = 2)
+
+```
+The cart method is the closest to the original distribution, as such, we would go for it.
+
+
+```{r}
+#update the soybeans column with the imputed data
+
+full_crop$Soybeans <- soybeans_imputed$imputed_cart
+
+```
+
+lastly, the last column.
+
+
+```{r include=FALSE}
+#impute methods for barley
+
+barley_imputed <- data.frame(
+  original = crops$Barley,
+  imputed_pmm = complete(mice(crops, method = "pmm"))$Barley,
+  imputed_cart = complete(mice(crops, method = "cart"))$Barley,
+  imputed_lasso = complete(mice(crops, method = "lasso.norm"))$Barley)
+
+#barley_imputed
+```
+
+Using histogram will allow us determine which of the methods produced the best imputed data. 
+
+```{r}
+d1 <- ggplot(barley_imputed, aes(x = original)) +
+  geom_histogram(fill = "#ad1538", color = "#000000", position = "identity") +
+  ggtitle("Original distribution") +
+  theme_classic()
+
+d2 <- ggplot(barley_imputed, aes(x = imputed_pmm)) +
+  geom_histogram(fill = "#15ad4f", color = "#000000", position = "identity") +
+  ggtitle("imputed_pmm distribution") +
+  theme_classic()
+
+d3 <- ggplot(barley_imputed, aes(x = imputed_cart)) +
+  geom_histogram(fill = "#1543ad", color = "#000000", position = "identity") +
+  ggtitle("imputed_cart distribution") +
+  theme_classic()
+
+d4 <- ggplot(barley_imputed, aes(x = imputed_lasso)) +
+  geom_histogram(fill = "#ad8415", color = "#000000", position = "identity") +
+  ggtitle("imputed_lasso distribution") +
+  theme_classic()
+
+plot_grid(d1, d2, d3, d4, nrow = 2, ncol = 2)
+
+```
+pmm is the ideal method here. 
+
+```{r}
+#update the soybeans column with the imputed data
+
+full_crop$Barley <- barley_imputed$imputed_pmm
+
+```
+
+
+Now, the full_crop data set has no missing data, and the data set is ready for analysis. 
+
+
+We would now repeat the same process for tractor data set. 
+
+First, we view the columns with missing data.
+
+```{r}
+#check for missing data
+skim(tractors)
+
+```
+
+4 columns are reported to have missing columns including the year column. 
+Dropping these columns will be a disadvantage. Again, we are going to apply data imputation.
+
+Because of the peculiarity of the data, method 'pmm' for imputation won't work, so we have to adapt method cart.
+
+```{r}
+#reassign the variable
+
+full_tractor <- tractors
+
+#view column names
+colnames(full_tractor)
+```
+
+
+```{r}
+#rename the df
+names(full_tractor)[4] = "tractors_per_hsq"
+names(full_tractor)[5] = "cereal_yield"
+names(full_tractor)[6] = "population"
+
+#view column names
+colnames(full_tractor)
+```
+
+Start imputation process
+
+```{r include=FALSE}
+#impute data
+
+full_tractor$tractors_per_hsq <- complete(mice(full_tractor, method = "cart"))$tractors_per_hsq
+
+full_tractor$cereal_yield <- complete(mice(full_tractor, method = "cart"))$cereal_yield
+
+
+full_tractor$population <- complete(mice(full_tractor, method = "cart"))$population
+
+```
+
+
+Replicate the same process for land_use.
+```{r}
+#store df in a new variable
+full_land <- land_use
+
+#view column names
+colnames(full_land)
+```
+
+```{r}
+
+#rename columns
+names(full_land)[4]  = "yield"
+names(full_land)[5] = "change_to_land"
+names(full_land)[6] = "population"
+
+#view column names
+colnames(full_land)
+```
+
+Data imputation using cart method. 
+
+```{r include=FALSE}
+
+full_tractor$yield <- complete(mice(full_tractor, method = "cart"))$yield
+
+full_tractor$change_to_land <- complete(mice(full_tractor, method = "cart"))$change_to_land
+
+full_land$population <- complete(mice(full_land, method = "cart"))$population
+
+```
+
+
+Now that we have clean data set, we can start answering the research questions. 
+
+
+## Research Question 1
+
+1. Explore the average yield of major crops in Africa. 
+
+The best visualization to explore this parameter would be a bar chart. Bar charts are best used when showing comparisons between categories. Typically, the bars are proportional to the values they represent and can be plotted either horizontally or vertically. One axis of the chart shows the specific categories being compared, and the other axis represents discrete values.
+
+To perform this, we would first filter the data sets to reflect just African Nations.
+
+To make this easier, we would import a table consisting a list of all African nations. 
+
+```{r}
+#import a table consisting of names of African countries
+africa <- read_csv("Africa.csv") %>% select(-1)
+
+
+#rename column
+names(africa)[1] = "Entity"
+head(africa,2)
+
+```
+
+
+To extract the Nations that are common to both data sets, a left-join has to be performed.  
+
+```{r}
+#left join the data set
+africa_yield <- left_join(africa,full_crop, by ="Entity") %>% drop_na()
+```
+
+
+```{r}
+#summarise the dataset
+africa_yield <-  africa_yield %>% group_by(Entity,Code) %>% summarise(`average wheat yield` = mean(wheat), `average Rice yield` = mean(Rice), `average maize yield` = mean(Maize), `average soyabeans yield` = mean(Soybeans), `average barley yield` = mean(Barley))
+
+#View the table
+head(africa_yield)
+
+```
+
+To visualize the metric above using a stacked bar chart. The data has to be narrowed.
+
+```{r}
+#make the data narrow
+long_data <- melt(africa_yield,id.vars = c("Entity","Code"))
+
+#view data
+head(long_data,5)
+```
+
+
+Now, the visualizations shall be produced. 
+```{r}
+
+theme_set(theme_classic())
+
+ggplot(long_data, aes(x = Code, y = value))+
+  geom_col(aes(fill =variable), width = 0.7) +  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + scale_fill_manual(values = c(`average wheat yield`= "black",`average Rice yield` = "darkorange",`average maize yield` = "darkred",`average soyabeans yield`="green",`average barley yield` ="darkblue" )) + xlab("Country Codes") +ylab("average yield") +ggtitle("Average yield of major cereal crops in Africa") 
+```
+
+The plot shows the average crop yield for major cereal crops grown in Africa. 
+
+From the plot, we are able to identify 5 countries each, having a high average of these crop yields.
+
+
+### Top producing Countries of Barley in Africa
+
+1. Zimbabwe 
+2. Namibia
+3. Egypt
+4. Mauritius
+5. Kenya
+
+### Top producing Countries of Soyabeans in Africa 
+
+1. Egypt
+2. Mauritius
+3. Seychelles
+4. Zimbabwe
+5. Equatorial Guinea
+
+### Top producing Countries of maize in Africa
+
+1. Mauritius
+2. South Africa
+3. Egypt
+4. Equatorial Guinea
+5. Ethiopia
+
+### Top producing Countries of Rice in Africa
+
+1. Burundi
+2. Kenya
+3. Mauritius 
+4. Morocco
+5. Egypt
+
+### Top producing Countries of Wheat in Africa
+
+1. Egypt
+2. Zimbabwe
+3. Namibia
+4. Zimbabwe
+5. South Sudan
+
+Overall, from a look at the crops, we can ascertain that the most grown crop in Africa is rice while the least crop is soybeans followed by barley. This is because rice is widely consumed in Africa.
+
+### Research Objective 2 
+
+The second objective to explore the population growth of all African nations as contained in the data set. 
+
+A line graph shall be used for this visualization. Line graphs are used to track changes over short and long periods of time.
+
+This shall begin by left joining the full land data set with the African nations list. 
+
+```{r}
+#left join the data
+africa_land <- left_join(africa,full_land, by ="Entity") %>% drop_na()
+
+#view the data
+head(africa_land)
+```
+We would now get the average population for the 52 African nations to determine the top 5 nations with highest average growing population. 
+
+```{r}
+#get average population
+
+population_average <- africa_land %>% group_by(Entity, Code) %>% summarise(`average population` = mean(population)) %>% arrange(desc(`average population`))
+
+population_average
+```
+
+
+```{r}
+#create a line plot to explore the trend of population for 5 top growing population in Africa
+
+tre <- africa_land %>% filter(Code == "NGA" | Code == "EGY"| Code == "ETH"| Code == "ZAF"| Code == "TZA")
+
+#make a trend plot for top 5 Nations
+
+
+ ggplot(data =tre , aes(x = Year, y= population, color = Entity))+ geom_point() + geom_line(size=1, alpha=0.5, linetype=1) +
+  ggtitle("Top 5 African Nations Population Trend") +
+  xlab("Year") +
+  ylab("Population")
+  
+```
+The population has steadily grown in Africa over the years. The population progresses for most of the countries steadily. 
+Four out of the fifty two countries in the plot stood out significantly, with Nigeria being top of the list. Trailing behind Nigeria's back is Egypt. Egypt's growth progression is a steady one, and we see Ethiopia over taking Egypt's population in 2008. South Africa's population growth also steadily progressed, making it the 4th African Nation with a growing population in the years interval examined.  The 5th Nation on the list is Tanzania. 
+
+
+Having identified the 5 Nations with growing population in Africa, a comparison between these Nations and the average crop yield will led us to the next objective. 
+
+### Objective 4
+
+To compare the average crop yield of the 5 countries with their population. One of the index to building sustainability as a nation is self sufficiency with food production that circulate through her population. 
+
+The visualization option for this objective includes the box plot, Bar plot and scatter plot.
+
+Box plots are used to show distributions of numeric data values, especially when you want to compare them between multiple groups. They are built to provide high-level information at a glance, offering general information about a group of data's symmetry, skew, variance, and outliers.
+
+Bar graphs or bar charts are used to compare things between different groups or to track changes over time. However, when trying to measure change over time, bar graphs are best when the changes are larger.
+
+while, scatter plots or X-Y plots are used to determine relationships between the two different things. The x-axis is used to measure one event (or variable) and the y-axis is used to measure the other. If both variables increase at the same time, they have a positive relationship. If one variable decreases while the other increases, they have a negative relationship. Sometimes the variables don't follow any pattern and have no relationship.
+
+```{r}
+#create a vector of the 5 countries
+
+five_countries <- c("Nigeria", "Egypt","Ethiopia", "South Africa", "Tanzania")
+
+#filter for this countries in the full tractor data set
+
+five_cont <- full_tractor %>% filter( Entity %in% five_countries) 
+
+View(five_cont)
+
+```
+
+
+Use box plot to compare yield
+```{r}
+#create a box plot for crop yield for the 5 Nations
+
+ggplot(five_cont, aes(x=Code, y=cereal_yield, fill=Code)) +
+  geom_boxplot(position=position_dodge(1))+ xlab("Country Code") + ggtitle("Box plots of cereal yield of African Nations") +  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+```
+The plot above revealed 5 statistics about the cereal yield index. The tiny strokes at the top and base of the rectangles signifies the maximum and the minimum values. Egypt is the country with the highest value of crop yield and also the lowest. 
+
+There are also some dark spots at the top of these lines, these spots are called outliers. That is, values that falls outside of the normal range for each group, 4 out of the 5 countries reported some outliers values. 
+
+The thick line at the middle of the rectangles indicated the median, while the top of the rectangle is the 3rd quartile of the data and the base of the rectangle signifies the 1st quartile of the data spread. 
+
+Looking at the plot, Egypt is the best performing country with respect to cereal yield, followed by South Africa, Ethiopia comes next, then Tanzania and lastly Nigeria.
+
+It's ironic that Nigeria with the highest growing population has the least cereal yield index. 
+
+
+```{r}
+#using a box plot to visualize the population
+ggplot(five_cont, aes(x=Code, y=population, fill=Code)) +
+  geom_boxplot(position=position_dodge(1))+ xlab("Country Code") + ggtitle("Population Boxplots of African Nations") +  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + theme_minimal()
+```
+
+The plot above is a box plot visuals of the top 5 growing population in Africa. An alternative to the earlier line graph of African Nations, after identifying the top 5 growing countries. 
+
+To compare the average crop yield and the average population of these nations.we need to create a data frame of averages. 
+
+
+```{r}
+#create a df of average population and average cereal yield
+
+avg_cepop <- five_cont %>% group_by(Entity,Code) %>% summarise( `average population` = mean(population), `average cereal yield` = mean(cereal_yield),tot_pop = sum(population), tot_y = sum(cereal_yield))
+
+head(avg_cepop)
+```
+
+
+```{r}
+#visualize the average crop yield
+ggplot(avg_cepop, aes(Code,`average cereal yield`, fill = Code)) + geom_bar(stat="identity")+ geom_text(aes(label=round(`average cereal yield`,0)), position=position_dodge(width=0.9), vjust=-0.25) + ylab("Average Cereal Yield") + xlab(" Country Code")  + ggtitle("Plot of Average cereal yield") +theme_minimal()
+
+```
+
+The bar plot shows a comparison of the cereal yield for 5 of the top growing population countries in Africa. Egypt has the highest average, followed by South Africa, then Tanzania, 4th on the list is Ethiopia and the least is Nigeria. 
+
+To examine the relationship between average population of these countries with their average cereal yield using a scatter plot.
+
+
+
+```{r}
+#plot the scatter plot
+ggplot(five_cont, aes(x=population, y=cereal_yield )) + 
+    geom_point(aes(color = Entity),size=1) + scale_color_manual(values=c('purple', 'steelblue', "darkorange", "darkgreen", "black")) +
+     ggtitle("relationship between crop yield and population")
+```
+
+The scatter plot is used to investigate relationship, in this case, the relationship between population growth and cereal yield.
+
+Starting with Tanzania, the plot revealed a substantial increase in the crop yield while the population was steady with little or no growth.
+
+For South Africa, As the population increases, the cereal yield  as soon as the population started increasing, the cereal yield dropped at first, then increased slightly. 
+
+For Nigeria, while the population were in its early stage, cereal yield was high, but as the population increases, the cereal yield keeps dwindling, as the population peaks, the cereal yield rose credibly. 
+
+Speaking of Ethiopia, as the population increases, there was a tangible increase in the cereal yield. although the yield might not match the increasing population, but there is a significant increase as the population grows. 
+
+For Egypt, the only country whose cereal yield significantly increased as the population increases. 
+
+# Conclusion
+
+Investigating global crop yield with a focus on African Nations with respect to the growing population shows a lot has to be done for in the continent to achieve self sustainability as far as cereal crops are concerned. Egypt as a Nation appears to be getting it right with the cereal yield. This could be appropriated to a lot of factors such as machinery, soil fertility, favorable climate etc. It would be a step in the right direction and a major milestone if the other African Nations could emulate what the Egyptians are doing.
+
+A more detailed statistical analytical procedure could indicate if there's significant difference in the crop yield, or use forecasting methods to project for both the population and the cereal yield for some or all of the countries to determine what their crop yield or population might be in few years time.   
+
+
+
+## References
+
+Dario Radecic, 2023. Imputation in R: Top 3 Ways for Imputing Missing Data, Retrieved on 11 th June  2023.
+
+<https://www.r-bloggers.com/2023/01/imputation-in-r-top-3-ways-for-imputing-missing-data/>
+
+Tim Miller, 2021. What Is a Box Plot and When to Use It,
+<https://chartio.com/resources/tutorials/what-is-a-box-plot/> Mike Yi, 2021.
+
+A Complete Guide to Box Plots <https://chartio.com/learn/charts/box-plot-complete-guide/#:~:text=When%20you%20should%20use%20a,skew%2C%20variance%2C%20and%20outliers>
+.Retrieved on 10th June 2023
+
+World Bank. (2000). Decentralizing Agricultural Extension: Lesson and Good practice.
+<http://siteresources.worldbank.org/INTARD/8258261111063678817/20431788/Decentalization.pdf> site visited on 12/11/2020.
+
+Ashton, P. (2000). Southern African Water Conflicts: Are they inevitable or preventable? The African Dialogue Lecture Series, Pretoria University, South Africa
+
+ALLABY, R. 2010. Integrating the processes in the evolutionary system of domestication. Journal of Experimental
+
+ALLABY, R. 2010. Integrating the processes in the evolutionary system of domestication. Journal of Experimental Botany 61: 935-44.
+
+Hannah Ritchie and Max Roser and Pablo Rosado (2022). Crop Yields: Our World in Data <https://ourworldindata.org/crop-yields>
+
+Dhivya B H, Manjula R, Siva Bharathi S, Madhumathi R. A Survey on Crop Yield Prediction based on Agricultural Data, International Journal of Innovative Research in Science, Engineering and Technology. 2017; 6(3).
+
+D Ramesh, B Vishnu Vardhan, “Analysis of Crop Yield Prediction using Data Mining Techniques”,International Journal of Research in Engineering and Technology (IJRET), Vol.4, 2015.
+
+Devika, B.Ananthi, Internatinal research journal of engineering and technology(IRJET),2018.
+
+UNDP. (2010) Climate Change and the Millennium Development Goals
+
+Parry, M., Rosenzweig, C., and Livermore, M.: Climate change, global food supply and risk of hunger,Philos. T. Roy. Soc. Lond. B, 36
+
+van der Velde, M., Tubiello, F. N., Vrieling, A., and Bouraoui, F.: Impacts of extreme weather on wheat and maize in France: evaluating regional crop simulations against observed data, Climatic Change, 113, 751–765, <https://doi.org/10.1007/s10584>, 011-0368-2, 2012.
+  
+  
